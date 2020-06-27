@@ -64,7 +64,7 @@ class MaoyanSpider():
             release_date_list.append(release_date)
 
         for tags in bs_info.find_all('a'):
-            print('tags:', tags)
+            # print('tags:', tags)
             # Get the link of the movie
             link = '{}{}'.format(self.allowed_domains[0], tags.get('href'))
             print('Link: {}'.format(link))
