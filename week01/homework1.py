@@ -96,7 +96,7 @@ class MaoyanSpider():
 
     def save_to_csv(self):
         self.df = self.df.reset_index(drop=True)
-        self.df.to_csv('{}.csv'.format(self.name))
+        self.df.to_csv('homework1_{}.csv'.format(self.name))
         print('Successfully saved the dataframe to a csv called {}.csv'.format(self.name))
 
 
