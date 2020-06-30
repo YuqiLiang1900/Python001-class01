@@ -11,6 +11,10 @@ Further understanding of the web-scraping framework Scrapy
 
 Note: in later courses, we will introduce an easier way ORM.
 
+sqlite 和 mysql 是同一个级别，都叫数据库软件。图形界面的软件是管理工具，是用来管理数据库的，mysql 和 sqlite 都有各自的管理软件，有些管理软件也可以同时管理 mysql 和 sqlite。
+
+用命令行和管理软件都行，想练 sql 语句的功底可以直接终端操作，管理软件最好安装一个，在数据库中数据量大的时候方便你查看，能够提高调试效率。再说安装图形管理工具也不影响你使用命令操作数据库。
+
 The general process:
 * Connect to the database (by initializing a pymysql.connect object)
 * Get access to a cursor 
@@ -226,4 +230,10 @@ print(reponse.text) # {"status":"failed","message":"parameter_missing","descript
 * 405: 没有指定user-agent
 * 参数非法：返回浏览器去查看 - header - form data，发现 ck 和 remember ticket 没提交。因此，request要提交完整。
 
+
+### Selenium and Webdriver
+
+对于简单的登录，可以直接向登录接口 POST 数据；复杂些的登录，直接用带 Cookie 的请求也可以破解。但是 Cookie 那么长一串，还要将其转变为字典格式，非常麻烦。因此，有一种办法应运而生，可以和平时一样只输入账号和密码就能登录：
+
+Selenium 是一个 web 自动化测试工具，必须和浏览器配合使用。由于它可以模仿用户的真实操作，所以它可以用来解决 JavaScript 渲染问题，也可以解决登录问题。
 
