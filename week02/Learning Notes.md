@@ -9,9 +9,9 @@ Contents:
 * Handling Exception Errors
 * PyMySQL: Saving Data to a Database
 * Avoid being detected by the web server
- * HTTP Header Info: User-agent, Referer
- * Selenium and Webdriver
- * Captcha
+    * HTTP Header Info: User-agent, Referer
+    * Selenium and Webdriver
+    * Captcha
 
 ### Handling Exception Errors
 
