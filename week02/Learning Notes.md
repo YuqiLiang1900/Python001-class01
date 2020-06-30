@@ -92,7 +92,7 @@ Tips regarding the connections of databasse:
 
 ### Avoid being detected by the web server
 
-#### HTTP Header Info: User-agent, Referer, Cookies
+#### HTTP Header Info: User-agent, Referer
 
 We can use a random browser header to simulate the requests from a broswer. 
 
@@ -121,4 +121,50 @@ print('Random broswer: '.format(ua.random))
 
 有些网站也会增加自己的一些参数：e.g. douban.com - headers: x-client-data
 
-##### Cookie 模拟登录，解决反爬虫
+
+#### Cookie 模拟登录，解决反爬虫
+
+对于大部分网站而言，直接复制cookie没有问题。但是对于大规模爬虫来说，每次手动复制的话会稍显繁琐。因为cookie有有效期，几小时/24小时。若是爬虫7/24h运行，则还
+需要凌晨爬起来再改cookie。
+
+因此，需要模拟登录 =》 涉及到另一个http另外一个基础的概念。
+* get：在浏览器页面正常发起请求。直接将网页地址直接粘贴在浏览器的方式是get方式。
+* post：
+
+```python
+# http get method
+import requests
+r = requests.get('https://github.com')
+r.status_code
+r.headers['content-type']
+# r.text
+r.encoding
+# r.json()
+
+# http post method
+r = requests.post('http://httpbin.org/post', data={'key': 'value'})
+r.json() # 若是post成功，请求完之后会有返回值，并且将其进行json化处理。
+```
+
+Post和cookie之间的关系：产生cookie是需要用户名和密码登录的，但是一般用户名和密码都是需要保密的，所以希望不要在浏览器上明文显示密码。客户端也会通过加密的机制，返回进行加密的用户名和密码，也是客户端一部分的cookie保留了下来。
+
+```python
+import requests
+
+# 在同一个 session 实例发出的所有请求之间保持 cookie
+# 更显式的指定，要用一个会话来去让上下两次连接都由同一个会话发起。这样的话，会在所有的请求之间来去保存好我们的cookie。
+s = requests.Session()
+
+# key（用户名）: sessioncookie, value（密码）: 123456789 从而模拟post的方式
+s.get('http://httpbin.org/cookies/set/sessioncookie/123456789')
+r = s.get('http://httpbin.org/cookies')
+
+print(r.text)
+# '{'cookies': {'sessioncookie': '123456789'}}'
+# 实际上会加密保存，cookie保存用户名、密码、cookie保存的有效期。到期之后，用户需要再次登录。
+
+# 会话可以使用上下文管理器
+with requests.Session() as s:
+   s.get('http://httpbin.org/cookies/set/sessioncookie/123456789')
+```
+
