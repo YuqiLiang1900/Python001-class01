@@ -168,3 +168,62 @@ with requests.Session() as s:
    s.get('http://httpbin.org/cookies/set/sessioncookie/123456789')
 ```
 
+注意：Requests 默认使用了 Session 功能。
+
+把post模拟登录都放在Scrapy的start_requests. 因为start_requests只会先发送一次请求，正好在此处登录用户名和密码，获得cookie。
+
+```python
+
+import time
+import requests
+from fake_useragent import UserAgent
+
+ua = UserAgent(verify_ssl=False)
+headers = {
+    'User-Agent': ua.random,
+    'Referer': 'https://accounts.douban.com/passport/login_popup?login_source=annoy' # 从浏览器中复制过来的。
+}
+
+s = requests.Session()
+
+# 会话对象：在同一个 Session 实例发出的所有请求之间保持 cookie。
+# 期间，使用 urllib3 的 connection pooling 功能。
+# 连接池：当你去发起连接的时候，就从池子当中选择一个较为空闲的连接进行发起。
+# 向同一主机发送多个请求，底层的TCP连接将会被重用，从而带来显著的性能提升。
+
+login_url = 'https://accounts.douban.com/j/mobile/login/basic'
+
+form_data = {
+    'ck': '',
+    'name': '15055495@qq.com',
+    'password': 'test123test456',
+    'remember': 'false',
+    'ticket': ''
+}
+
+response = s.post(login_url, data=form_data, headers=headers)
+
+# 注意：因为我们没有任何输出，所以也不知道登录成功之后会是怎么样。于是，可以：
+# print(response.text()) # TypeError: 'str' object is not callable
+print(response) # <Response [200]>
+print(reponse.text) # {"status":"failed","message":"parameter_missing","description":"参数缺失","payload":{}}
+
+
+# 或是：登录后可以进行后续的请求，因为拿到cookies了：
+# url2 = 'https://accounts.douban.com/passport/setting'
+
+# response2 = s.get(url2, headers=headers)
+# 可以用新的session再去做请求：
+# response3 = newsession.get(url3, headers=headers, cookies=s.cookies)
+
+# 将请求的登录信息进行保存
+# with open('profile.html', 'w+') as f:
+#     f.write(response2.text)
+
+```
+
+注意：post的请求可能返回的结果有
+* 405: 没有指定user-agent
+* 参数非法：返回浏览器去查看 - header - form data，发现 ck 和 remember ticket 没提交。因此，request要提交完整。
+
+
