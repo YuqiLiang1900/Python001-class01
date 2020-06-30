@@ -92,6 +92,33 @@ Tips regarding the connections of databasse:
 
 ### Avoid being detected by the web server
 
-#### User-agent
+#### HTTP Header Info: User-agent, Referer, Cookies
 
-#### 
+We can use a random browser header to simulate the requests from a broswer. 
+
+A more strict way to constrain from the perspective of the website: asking to log in. The cookies in the request to a web server contains such a information.
+
+##### Random user-agent
+
+```python
+from fake_useragent import UserAgent
+ua = UserAgent(verify_ssl=False) 
+# 在网络当中请求一些目前常用的浏览器
+# 不去进行ssl验证，否则会经常下载失败，导致请求的IP被封掉。这也让浏览器去请求信息返回更快。
+
+# Simulate different broswers
+print('Chrome broswer: '.format(ua.chrome))
+print(ua.safari)
+print(ua.ie)
+
+# return headers
+print('Random broswer: '.format(ua.random))
+```
+
+##### Referer
+
+指是从哪个链接里跳转过来的。有些网站会验证你的 user-agent, host, and referer.
+
+有些网站也会增加自己的一些参数：e.g. douban.com - headers: x-client-data
+
+##### Cookie 模拟登录，解决反爬虫
