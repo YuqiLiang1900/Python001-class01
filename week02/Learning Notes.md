@@ -237,3 +237,10 @@ print(reponse.text) # {"status":"failed","message":"parameter_missing","descript
 
 Selenium 是一个 web 自动化测试工具，必须和浏览器配合使用。由于它可以模仿用户的真实操作，所以它可以用来解决 JavaScript 渲染问题，也可以解决登录问题。
 
+老师在05讲的三个代码文件：
+
+
+### 验证码识别
+
+
+
