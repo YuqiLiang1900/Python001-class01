@@ -3,9 +3,7 @@
 ## Objective for Week Two
 Further understanding of the web-scraping framework Scrapy
 
-## Knowledge tree
-
-Contents:
+## Knowledge Tree
 * Handling Exception Errors
 * PyMySQL: Saving Data to a Database
 * Avoid being detected by the web server
@@ -13,7 +11,7 @@ Contents:
     * Selenium and Webdriver
     * Captcha
 
-### Handling Exception Errors
+## Handling Exception Errors
 
 One of the big issues with Selenium is that if something doesn’t exist on the page, it freaks out and throws an error. For example, if I try to find #dinosaur-park and it isn’t there, I get a NoSuchElementException and my code stops working.
 
@@ -38,7 +36,7 @@ button, and you get an error.
 
 
 
-### PyMySQL: Saving Data to a Database
+## PyMySQL: Saving Data to a Database
 
 Note: in later courses, we will introduce an easier way ORM.
 
@@ -125,15 +123,15 @@ Tips regarding the connections of databasse:
 * Reuse the existing connection if possible. Do not create a new connection for every simple CRUD operation.
 * The resource of database connections is previous. Close the connection whenever we have finished the queries. 
 
-### Avoid being detected by the web server
+## Avoid being detected by the web server
 
-#### HTTP Header Info: User-agent, Referer
+### HTTP Header Info: User-agent, Referer
 
 We can use a random browser header to simulate the requests from a broswer. 
 
 A more strict way to constrain from the perspective of the website: asking to log in. The cookies in the request to a web server contains such a information.
 
-##### Random user-agent
+#### Random user-agent
 
 ```python
 from fake_useragent import UserAgent
@@ -150,14 +148,14 @@ print(ua.ie)
 print('Random broswer: '.format(ua.random))
 ```
 
-##### Referer
+#### Referer
 
 指是从哪个链接里跳转过来的。有些网站会验证你的 user-agent, host, and referer.
 
 有些网站也会增加自己的一些参数：e.g. douban.com - headers: x-client-data
 
 
-#### Cookie 模拟登录，解决反爬虫
+### Cookie 模拟登录，解决反爬虫
 
 对于大部分网站而言，直接复制cookie没有问题。但是对于大规模爬虫来说，每次手动复制的话会稍显繁琐。因为cookie有有效期，几小时/24小时。若是爬虫7/24h运行，则还
 需要凌晨爬起来再改cookie。
@@ -262,7 +260,7 @@ print(reponse.text) # {"status":"failed","message":"parameter_missing","descript
 * 参数非法：返回浏览器去查看 - header - form data，发现 ck 和 remember ticket 没提交。因此，request要提交完整。
 
 
-### Selenium and Webdriver
+## Selenium and Webdriver
 
 对于简单的登录，可以直接向登录接口 POST 数据；复杂些的登录，直接用带 Cookie 的请求也可以破解。但是 Cookie 那么长一串，还要将其转变为字典格式，非常麻烦。因此，有一种办法应运而生，可以和平时一样只输入账号和密码就能登录：
 
@@ -271,7 +269,7 @@ Selenium 是一个 web 自动化测试工具，必须和浏览器配合使用。
 老师在05讲的三个代码文件：
 
 
-### 验证码识别
+## 验证码识别
 
 
 
