@@ -5,7 +5,38 @@ Further understanding of the web-scraping framework Scrapy
 
 ## Knowledge tree
 
+Contents:
+* Handling Exception Errors
+* PyMySQL: Saving Data to a Database
+* Avoid being detected by the web server
+ * HTTP Header Info: User-agent, Referer
+ * Selenium and Webdriver
+ * Captcha
+
 ### Handling Exception Errors
+
+One of the big issues with Selenium is that if something doesn’t exist on the page, it freaks out and throws an error. For example, if I try to find #dinosaur-park and it isn’t there, I get a NoSuchElementException and my code stops working.
+
+```python
+driver.find_element_by_id('dinosaur-park')
+>>> NoSuchElementException: Message: no such element: Unable to locate element: {"metho d":"id","selector":"dinosaur-park"}
+(Session info: chrome=67.0.3396.79)
+(Driver info: chromedriver=2.38.552518 (183d19265345f54ce39cbb94cf81ba5f15905011),p latform=Mac OS X 10.12.6 x86_64)
+```
+
+To get around that, we need to tell Python “hey, try to do this, but if it doesn’t work, that’s ok!” We can accomplish this by using try and except.
+
+```python
+try: 
+  driver.find_element_by_id('dinosaur-park')
+except:
+  print("Couldn't find it.")
+```
+
+The part under try is run, and if it throws an error... we just ignore it and skip down to except ! This is very useful for clicking “next” buttons. When you get to the last page, there’s no ‘next’
+button, and you get an error.
+
+
 
 ### PyMySQL: Saving Data to a Database
 
