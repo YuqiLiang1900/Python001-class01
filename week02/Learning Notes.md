@@ -10,6 +10,9 @@ Further understanding of the web-scraping framework Scrapy
     * HTTP Header Info: User-agent, Referer
     * Selenium and Webdriver
     * Captcha
+* Middleware
+   * 下载中间件 & 系统代理IP
+   * 自定义中间件 & 随机代理IP
 
 ## Handling Exception Errors
 
@@ -134,6 +137,8 @@ Tips regarding the connections of databasse:
 * The resource of database connections is previous. Close the connection whenever we have finished the queries. 
 
 ## Avoid being detected by the web server
+
+反爬虫文献：https://segmentfault.com/a/1190000005840672
 
 ### HTTP Header Info: User-agent, Referer
 
