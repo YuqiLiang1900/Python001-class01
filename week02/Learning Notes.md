@@ -40,11 +40,17 @@ button, and you get an error.
 
 Note: in later courses, we will introduce an easier way ORM.
 
-sqlite 和 mysql 是同一个级别，都叫数据库软件。图形界面的软件是管理工具，是用来管理数据库的，mysql 和 sqlite 都有各自的管理软件，有些管理软件也可以同时管理 mysql 和 sqlite。
+Sqlite 和 mysql 是同一个级别，都叫数据库软件。图形界面的软件是管理工具，是用来管理数据库的，mysql 和 sqlite 都有各自的管理软件，有些管理软件也可以同时管理 mysql 和 sqlite。
 
 用命令行和管理软件都行，想练 sql 语句的功底可以直接终端操作，管理软件最好安装一个，在数据库中数据量大的时候方便你查看，能够提高调试效率。再说安装图形管理工具也不影响你使用命令操作数据库。
 
-The general process:
+本周最大的坑之一在于 mysql 在安装之后的初始化。按照老师的 mysql -u root -p 以及 mysql.server start 均报错： ERROR! The server quit without updating PID file (/usr/local/mysql/data/liangleis-MacBook-Pro.local.pid).
+
+解决方案：https://medium.com/@jainakansha/installing-and-running-mysql-on-macos-with-errors-resolved-70ef53e3b5b9 本篇博文拯救了我，虽然中途也出现了未曾预料的问题，但是解决方法是，点击initialize mysql，点击进入设置密码。
+
+![mysql interface](https://miro.medium.com/max/1330/1*7mHa3fkUyNeAQtTX8xP7ig.png)
+
+The general process of connecting Python to MySQL via Pymysql:
 * Connect to the database (by initializing a pymysql.connect object)
 * Get access to a cursor 
   * with connection.cursor() as cursor:
@@ -58,6 +64,8 @@ A typical example of using Pymysql:
 ```python
 import pymysql
 
+# /usr/local/mysql/suport-files/mysql.server
+
 # 数据库连接信息
 df_info = {
     'host': 'localhost',
@@ -69,6 +77,8 @@ df_info = {
 }
 
 # 需要使用的SQL CRUD语句
+# select 1 返回的肯定是1
+# version（）值得是mysql的当前版本
 sqls = ['select 1', 'select VERSION()']
 
 result = []
@@ -203,6 +213,8 @@ with requests.Session() as s:
 
 注意：Requests 默认使用了 Session 功能。
 
+Calling requests.request in turn creates a Session. If you are making multiple requests to the same endpoint you are better to use a session since it will hold open the TCP session between connections, keep a cookie jar and also remember any preferences for each request.
+
 把post模拟登录都放在Scrapy的start_requests. 因为start_requests只会先发送一次请求，正好在此处登录用户名和密码，获得cookie。
 
 ```python
@@ -259,8 +271,12 @@ print(reponse.text) # {"status":"failed","message":"parameter_missing","descript
 * 405: 没有指定user-agent
 * 参数非法：返回浏览器去查看 - header - form data，发现 ck 和 remember ticket 没提交。因此，request要提交完整。
 
+### Some helpful tutorials about cookie 模拟登录：
+* cookie模拟登陆 https://www.jianshu.com/p/6db4f48390d5
 
 ## Selenium and Webdriver
+
+使用 requests 可以去模拟浏览器行为，并获取cookie信息，并且进行正常登录。但有些时候，页面是经过 JavaScript 做了一些加密处理，或者有时页面中获取不到我们想要去请求的 URL。因此，Selenium and Webdriver 可以让 Python 模拟浏览器的点击行为，如填了用户名和密码，并点击登录；登录之后也能拿到cookie，并且将其复制出来。Python 去模拟这个行为的时候，用到的是 webdriver 功能。
 
 对于简单的登录，可以直接向登录接口 POST 数据；复杂些的登录，直接用带 Cookie 的请求也可以破解。但是 Cookie 那么长一串，还要将其转变为字典格式，非常麻烦。因此，有一种办法应运而生，可以和平时一样只输入账号和密码就能登录：
 
@@ -268,8 +284,207 @@ Selenium 是一个 web 自动化测试工具，必须和浏览器配合使用。
 
 老师在05讲的三个代码文件：
 
+1. 豆瓣网模拟登录
+
+```python
+from selenium import webdriver
+import time
+
+try:
+    browser = webdriver.Chrome()
+    # 需要安装 Chrome driver，和本机浏览器版本保持一致
+    # http://chromedriver.storage.googleapis.com/index.html
+
+    browser.get('https://www.douban.com')
+    time.sleep(1)
+
+    browser.switch_to_frame(browser.find_elements_by_tag_name('iframe')[0])
+    # 以下三种方法都可以：
+    # btm1 = browser.find_element_by_xpath('/html/body/div[1]/div[1]/ul[1]/li[2]')
+    btm1 = browser.find_element_by_xpath("//li[@class='account-tab-account']")
+    # btm1 = browser.find_element_by_xpath("//div[@class='account-body-tabs']//li[@class='account-tab-account']")
+    print(btm1) # []
+    print(type(btm1)) # <class 'list'>
+    btm1.click()
+
+    browser.find_element_by_xpath("//*[@id='username']").send_keys('15055495@qq.com')
+    browser.find_element_by_id("password").send_keys('test123test456')
+    time.sleep(1)
+    browser.find_element_by_xpath("//a[contains(@class, 'btn-account')]").click()
+
+    cookies = browser.get_cookies()
+    print(cookies)
+    time.sleep(3)
+    
+except Exception as e:
+    print(e)
+
+finally:
+    browser.close()
+    
+>>> DeprecationWarning: use driver.switch_to.frame instead
+  browser.switch_to_frame(browser.find_elements_by_tag_name('iframe')[0])
+<selenium.webdriver.remote.webelement.WebElement (session="9c4a4c7c05f61aa471cfcf2e10df1181", element="2f14ca37-3adf-4c73-b54c-89c04e564ddb")>
+<class 'selenium.webdriver.remote.webelement.WebElement'>
+[{'domain': '.douban.com', 'expiry': 1593609928, 'httpOnly': False, 'name': '__utmt', 'path': '/', 'secure': False, 'value': '1'}, {'domain': '.douban.com', 'expiry': 1609377328, 'httpOnly': False, 'name': '__utmz', 'path': '/', 'secure': False, 'value': '30149280.1593609328.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)'}, {'domain': '.douban.com', 'httpOnly': False, 'name': '__utmc', 'path': '/', 'secure': False, 'value': '30149280'}, {'domain': '.douban.com', 'expiry': 1593611128, 'httpOnly': False, 'name': '__utmb', 'path': '/', 'secure': False, 'value': '30149280.1.10.1593609328'}, {'domain': '.douban.com', 'expiry': 1656681328, 'httpOnly': False, 'name': '__utma', 'path': '/', 'secure': False, 'value': '30149280.880660377.1593609328.1593609328.1593609328.1'}, {'domain': '.douban.com', 'expiry': 1625145325, 'httpOnly': False, 'name': 'll', 'path': '/', 'secure': False, 'value': '"108165"'}, {'domain': 'accounts.douban.com', 'httpOnly': False, 'name': 'login_start_time', 'path': '/', 'secure': False, 'value': '1593609328126'}, {'domain': 'accounts.douban.com', 'httpOnly': False, 'name': 'apiKey', 'path': '/', 'secure': False, 'value': ''}, {'domain': '.douban.com', 'expiry': 1625145325, 'httpOnly': False, 'name': 'bid', 'path': '/', 'secure': False, 'value': 'LXrYkmpVegg'}]
+```
+
+1.2 类似的作业：使用 requests 或 Selenium 模拟登录石墨文档 https://shimo.im
+
+```python
+from selenium import webdriver
+import time
+
+try:
+    browser = webdriver.Chrome()
+    time.sleep(1)
+
+    browser.get('https://shimo.im')
+    login_btn = browser.find_element_by_xpath("//button[@class='login-button btn_hover_style_8']")
+    login_btn.click()
+
+    browser.find_element_by_xpath("//input[@name='mobileOrEmail']").send_keys("356545057@qq.com")
+    browser.find_element_by_xpath("//input[@type='password']").send_keys("test123test456")
+    time.sleep(1)
+    browser.find_element_by_xpath("//button[@class='sm-button submit sc-1n784rm-0 bcuuIb']")
+
+    cookies = browser.get_cookies()
+    print(cookies)
+    time.sleep(3)
+
+except Exception as e:
+    print(e)
+
+finally:
+    browser.close()
+    
+>>>[{'domain': 'shimo.im', 'expiry': 1609163116, 'httpOnly': False, 'name': '_bl_uid', 'path': '/', 'secure': False, 'value': 'g2kptcth399eswwpsvp9iv9m78gz'}, {'domain': '.shimo.im', 'httpOnly': False, 'name': 'sensorsdata2015session', 'path': '/', 'secure': False, 'value': '%7B%7D'}, {'domain': '.shimo.im', 'expiry': 7900811154, 'httpOnly': False, 'name': 'sensorsdata2015jssdkcross', 'path': '/', 'secure': False, 'value': '%7B%22distinct_id%22%3A%221730a9fd4381d1-0f747438a3bf28-31617402-1128960-1730a9fd439b42%22%2C%22%24device_id%22%3A%221730a9fd4381d1-0f747438a3bf28-31617402-1128960-1730a9fd439b42%22%2C%22props%22%3A%7B%22%24latest_traffic_source_type%22%3A%22%E7%9B%B4%E6%8E%A5%E6%B5%81%E9%87%8F%22%2C%22%24latest_referrer%22%3A%22%22%2C%22%24latest_referrer_host%22%3A%22%22%2C%22%24latest_search_keyword%22%3A%22%E6%9C%AA%E5%8F%96%E5%88%B0%E5%80%BC_%E7%9B%B4%E6%8E%A5%E6%89%93%E5%BC%80%22%7D%7D'}, {'domain': '.shimo.im', 'expiry': 1909045336, 'httpOnly': False, 'name': 'shimo_svc_edit', 'path': '/', 'secure': False, 'value': '8943'}, {'domain': '.shimo.im', 'expiry': 1909143917, 'httpOnly': False, 'name': 'shimo_gatedlaunch', 'path': '/', 'secure': False, 'value': '4'}, {'domain': '.shimo.im', 'expiry': 1625147154, 'httpOnly': False, 'name': 'Hm_lvt_aa63454d48fc9cc8b5bc33dbd7f35f69', 'path': '/', 'secure': False, 'value': '1593611110'}, {'domain': '.shimo.im', 'expiry': 1593644399, 'httpOnly': False, 'name': 'sajssdk_2015_cross_new_user', 'path': '/', 'secure': False, 'value': '1'}, {'domain': '.shimo.im', 'expiry': 1593614705, 'httpOnly': True, 'name': 'shimo_sid', 'path': '/', 'secure': False, 'value': 's%3AKI2vTfT3QDr3SmHjkDFHCp7FI7h3Y48O.8ZTmSGZwypLCzxy5c%2BqMxfapFXjHoYSiiUHsi1YMdrk'}, {'domain': '.shimo.im', 'httpOnly': False, 'name': 'anonymousUser', 'path': '/', 'secure': False, 'value': '-8015453060'}, {'domain': '.shimo.im', 'expiry': 1909143905, 'httpOnly': False, 'name': 'shimo_kong', 'path': '/', 'secure': False, 'value': '1'}, {'domain': '.shimo.im', 'httpOnly': False, 'name': 'deviceIdGenerateTime', 'path': '/', 'secure': False, 'value': '1593611105733'}, {'domain': '.shimo.im', 'httpOnly': False, 'name': 'deviceId', 'path': '/', 'secure': False, 'value': 'eba3c743-1bc3-421c-a4ea-0f000b052eb4'}, {'domain': '.shimo.im', 'httpOnly': False, 'name': 'Hm_lpvt_aa63454d48fc9cc8b5bc33dbd7f35f69', 'path': '/', 'secure': False, 'value': '1593611155'}, {'domain': 'shimo.im', 'httpOnly': False, 'name': '_csrf', 'path': '/', 'secure': False, 'value': '9ijVoWREDtq-w0O84KKzkxsv'}]
+```
+
+
+2. 通过模拟浏览器行为，爬取电影详情页的短评。
+
+可以使用（1）scrapy （2）selenium。但是机制不一样：（1）前提是在电影详情页中给出了短评页面的链接，且不加密；（2）没有给出的情况下，则需要模拟浏览器的行为，通过点击这个短评页面的按钮，从而进入短评页面。
+
+```python
+from selenium import webdriver
+import time
+
+try:
+    browser = webdriver.Chrome()
+
+    browser.get('https://movie.douban.com/subject/1292052')
+    time.sleep(1)
+
+    # btm1 = browser.find_element_by_xpath("//*[@id='hot-comments']/a")
+    btm1 = browser.find_element_by_xpath("//a[@href='comments?sort=new_score&status=P']")
+    btm1.click()
+    time.sleep(10)
+    print(browser.page_source)
+
+except Exception as e:
+    print(e)
+
+finally:
+    browser.close()
+```
+
+3. 我们抓到了指定的数据，我们需要将数据下载下来，但是我们发现该数据非常庞大，若是直接 Python 去下载的话，可能会出现下载过于缓慢或者下载失败等问题。因此，我们在写此功能时，如下载图片/pdf，我们经常会使用分块下载这个功能。
+
+块的大小如何指定：（1）内存 （2）网络的并发性能
+
+```python
+############# 小文件下载 #############
+import requests
+image_url = 'https://www.python.org/static/community_logos/python_logo-master-v3-TM.png'
+r = requests.get(image_url)
+# 以写入的方式打开文件，并且是以二进制的格式，因为是图片，所以希望以按顺序的方式写入。
+with open('python_logo.png', 'wb') as f:
+    f.writer(r.content)
+
+############# 大文件下载 #############
+# 若是文件比较大，且下载下来的文件要是先放在内存中，内存还是比较有压力的。
+# 所以，为了防止内存不够用的现象出现，我们要想办法把下载的文件分块写到磁盘中。
+
+# Iterates over the response data. When stream=True is set on the request, 
+# this avoids reading the content at once into memory for large responses. 
+# The chunk size is the number of bytes it should read into memory. 
+# This is not necessarily the length of each item returned as decoding can take place.
+
+
+import requests
+file_url = 'http://python.xxx.yyy.pdf'
+r = requests.get(file_url, stream=True) # 流式进行下载
+with open('python.pdf', 'wb') as pdf:
+    for chunk in r.iter_content(chunk_size=1024):
+        if chunk:
+            pdf.write(chunk)
+```
 
 ## 验证码识别
+
+#### Some helpful tutorials
+* 在线打码平台识别验证码 https://www.jianshu.com/p/5f94f8887a5d
+* 难度更大的进阶：知乎模拟登录 + 中英文验证码识别 https://zhuanlan.zhihu.com/p/42010466
+
+```python
+import requests
+import os
+from PIL import Image # 对图片来做一定的处理
+import pytesseract # 简单的图像识别库（from C++）
+
+# Download the picture
+session = requests.session()
+img_url = 'https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1320441599,4127074888&fm=26&gp=0.jpg'
+agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'
+headers = {'User-Agent': agent}
+r = session.get(img_url, headers=headers)
+
+with open('cap.jpg', 'wb') as f:
+    f.write(r.content)
+
+# Open and present the file
+im = Image.open('cap.jpg')
+im.show()
+
+# Grayscale image
+gray = im.convert('L')
+gray.save('c_gray2.jpg')
+im.close()
+
+# 二值化，让深色的能够更深，浅色的能够更浅
+threshold = 100
+table = []
+
+# 设了一个中间值：256
+for i in range(256):
+    if i < threshold:
+        table.append(0)
+    else:
+        table.append(1)
+
+print('table:', table)
+
+# table: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+# 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+# 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+out = gray.point(table, '1')
+out.save('c_th.jpg')
+
+th = Image.open('c_th.jpg')
+print(pytesseract.image_to_string(th, lang='chi_sim+eng'))
+# KDQU
+
+# 各种语言识别库 https://github.com/tesseract-ocr/tessdata
+# 放到 /usr/local/Cellar/tesseract/版本/share/tessdata
+
+```
+
+## 中间件
+
+### Some helpful resources:
+* 爬虫实战 Scrapy爬取猫眼电影: https://www.jianshu.com/p/cca6fe9b5650
 
 
 
