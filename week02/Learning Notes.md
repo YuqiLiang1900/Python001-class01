@@ -483,7 +483,21 @@ print(pytesseract.image_to_string(th, lang='chi_sim+eng'))
 
 ## 中间件
 
+注意：中间件不止一个，因此，它们的运行取决于设置的优先级。
+
+### 下载中间件 & 系统代理IP
+给中间件改一个代理的IP。原因：通过同一个IP去并发数据量请求的时候，并发的数据量太大了，它把这个IP列为有风险的IP网站。从而通过反爬虫的技术，将我们的IP封掉，或者封禁几分钟。这对爬虫进度会有影响。
+
+视频中讲解了：
+* 如何开启下载中间件，并且让下载中间件支持代理IP功能。这样，我们在下载之前就能做了一个处理，可以读取代理的IP。
+* 也要通过阅读分析源码，观察到底是从哪儿加载了代理IP。
+
+### 自定义中间件 & 随机代理IP
+
+
 ### Some helpful resources:
+* HttpProxyMiddleware: A middleware for scrapy. Used to change HTTP proxy from time to time. https://github.com/kohn/HttpProxyMiddleware
+* Using a custom proxy in a Scrapy spider: https://support.scrapinghub.com/support/solutions/articles/22000219743-using-a-custom-proxy-in-a-scrapy-spider
 * 爬虫实战 Scrapy爬取猫眼电影: https://www.jianshu.com/p/cca6fe9b5650
 
 
