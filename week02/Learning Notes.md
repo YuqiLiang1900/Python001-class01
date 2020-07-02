@@ -1,6 +1,6 @@
-# Learning Notes for Week Two
+# Learning Notes for Week 02
 
-## Objective for Week Two
+## Objective for Week 02
 Further understanding of the web-scraping framework Scrapy
 
 ## Knowledge Tree
@@ -36,7 +36,6 @@ except:
 
 The part under try is run, and if it throws an error... we just ignore it and skip down to except ! This is very useful for clicking “next” buttons. When you get to the last page, there’s no ‘next’
 button, and you get an error.
-
 
 
 ## PyMySQL: Saving Data to a Database
@@ -135,6 +134,19 @@ if __name__ == '__main__':
 Tips regarding the connections of databasse:
 * Reuse the existing connection if possible. Do not create a new connection for every simple CRUD operation.
 * The resource of database connections is previous. Close the connection whenever we have finished the queries. 
+
+Some helpful resources
+* 爬虫数据存储实例: https://github.com/yanceyblog/scrapy-mysql
+* Pymysql 增删查改实例：https://www.cnblogs.com/woider/p/5926744.html
+* A few tips and tricks about mysql in Navicate: https://www.navicat.com/en/company/aboutus/blog/1051-a-few-mysql-tips-and-tricks
+* Python 3 进阶 —— 使用 PyMySQL 操作 MySQL: https://shockerli.net/post/python3-pymysql/
+* Python+MySQL数据库操作（PyMySQL）: https://www.yiibai.com/python/python_database_access.html
+* Python中操作mysql的pymysql模块详解: https://www.cnblogs.com/wt11/p/6141225.html
+* Crawl Jingdong's mobile phone product data | selenium | Crawler Detailed: https://www.programmersought.com/article/75503988047/
+* Mysql| 命令行模式访问操作mysql数据库.: https://blog.csdn.net/u011479200/article/details/78511073
+* Python3 MySQL 数据库连接 - PyMySQL 驱动: https://www.runoob.com/python3/python3-mysql.html
+* scrapy爬虫系列：利用pymysql操作mysql数据库： https://newsn.net/say/scrapy-pymysql.html
+
 
 ## Avoid being detected by the web server
 
@@ -278,6 +290,11 @@ print(reponse.text) # {"status":"failed","message":"parameter_missing","descript
 
 ### Some helpful tutorials about cookie 模拟登录：
 * cookie模拟登陆 https://www.jianshu.com/p/6db4f48390d5
+* 超星刷课：https://github.com/sxwxs/chaoxing_shuake/blob/master/main.py
+* python网课自动刷课程序-------selenium+chromedriver: https://www.lagou.com/lgeduarticle/36714.html
+* python+selenium实现自动抢票: https://www.imooc.com/article/263824
+* 通过selenium+pymysql抓取民政部区号并存入数据库中: https://www.jianshu.com/p/09495554fd46
+* Python+Selenium(+pymysql)实现自动听取慕课课程: https://blog.csdn.net/ZZPHOENIX/article/details/83245692
 
 ## Selenium and Webdriver
 
@@ -488,10 +505,21 @@ print(pytesseract.image_to_string(th, lang='chi_sim+eng'))
 
 ## 中间件
 
+想象这样一个场景，C国通过一名特工给J国传递情报，在传递的过程中，特工B要经过一个中转站，可是出来并不是特工B，而是特工M，情报的内容也遭到了篡改。
+
+上面这个例子中的中转站，就是我们的Middleware，中文名叫做中间件。本来我们的爬虫是直接访问网站的，但是设置了中间件以后，爬虫会先跑到中间件里面做一些不可告人的勾当，然后再去访问网站。
+
+这里的不可告人的勾当，包括但不限于：更换代理IP，更换Cookie，更换User-Aget。
+
 注意：中间件不止一个，因此，它们的运行取决于设置的优先级。
 
 ### 下载中间件 & 系统代理IP
-给中间件改一个代理的IP。原因：通过同一个IP去并发数据量请求的时候，并发的数据量太大了，它把这个IP列为有风险的IP网站。从而通过反爬虫的技术，将我们的IP封掉，或者封禁几分钟。这对爬虫进度会有影响。
+
+在爬虫开发中，更换代理IP是非常常见的情况，有时候甚至每一次访问都需要随机选择一个代理IP来进行。
+
+原因：通过同一个IP去并发数据量请求的时候，并发的数据量太大了，导致网站把我们这个IP列为有风险的IP。从而通过反爬虫的技术，将我们的IP封掉，或者封禁几分钟。这对爬虫进度会有影响。
+
+中间件本身是一个Python的类，更换IP是在访问每个网页之前。所以，会用到 process_request 方法，这个方法中的代码会在每次爬虫访问网页之前执行。settings.py中，后面的数字表示优先级。数字越小，优先级越高，越先执行。例如，如果你有一个更换代理的中间件，还有一个更换Cookie的中间件，那么更换代理的中间件显然是需要在更换Cookie的中间件之前运行的。如果你把这个数字设为None，那么就表示禁用这个中间件。
 
 视频中讲解了：
 * 如何开启下载中间件，并且让下载中间件支持代理IP功能。这样，我们在下载之前就能做了一个处理，可以读取代理的IP。
