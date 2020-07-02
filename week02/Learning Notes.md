@@ -301,6 +301,7 @@ print(reponse.text) # {"status":"failed","message":"parameter_missing","descript
 * python+selenium实现自动抢票: https://www.imooc.com/article/263824
 * 通过selenium+pymysql抓取民政部区号并存入数据库中: https://www.jianshu.com/p/09495554fd46
 * Python+Selenium(+pymysql)实现自动听取慕课课程: https://blog.csdn.net/ZZPHOENIX/article/details/83245692
+* Selenium中frame表单切换: https://www.jianshu.com/p/221f9a2bb95a
 
 ## Selenium and Webdriver
 
