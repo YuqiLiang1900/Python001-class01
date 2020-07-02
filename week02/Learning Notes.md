@@ -13,6 +13,12 @@ Further understanding of the web-scraping framework Scrapy
 * Middleware
    * 下载中间件 & 系统代理IP
    * 自定义中间件 & 随机代理IP
+* 总结：自己遇到的坑
+   * mysql 与 python 的连接
+   * 类的init方法及self作为类中全局变量：https://www.cnblogs.com/ydf0509/p/9435677.html
+      * 不加self是类方法的私有变量，仅该方法可调用
+      * 在__init__中声明的self变量，相当于类的公有变量，所有的实例方法都可调用
+      * 在每次实例初始化时新建一份self变量，不同实例之间互不干扰
 
 ## Handling Exception Errors
 
@@ -515,18 +521,70 @@ print(pytesseract.image_to_string(th, lang='chi_sim+eng'))
 
 ### 下载中间件 & 系统代理IP
 
-在爬虫开发中，更换代理IP是非常常见的情况，有时候甚至每一次访问都需要随机选择一个代理IP来进行。
+中间件本身是一个Python的类，更换IP是在访问每个网页之前。所以，会用到 process_request 方法，这个方法中的代码会在每次爬虫访问网页之前执行。settings.py中，后面的数字表示优先级。数字越小，优先级越高，越先执行。例如，如果你有一个更换代理的中间件，还有一个更换Cookie的中间件，那么更换代理的中间件显然是需要在更换Cookie的中间件之前运行的。如果你把这个数字设为None，那么就表示禁用这个中间件。爬虫中间件用得比较少。
 
-原因：通过同一个IP去并发数据量请求的时候，并发的数据量太大了，导致网站把我们这个IP列为有风险的IP。从而通过反爬虫的技术，将我们的IP封掉，或者封禁几分钟。这对爬虫进度会有影响。
+什么叫下载中间件：在下载之前，我们可以给爬虫改一些东西（罩上一些面纱）。如：在下载之前（1）加上 HTTP 头部；（2）改一下对应的 cookie；（3）改代理的IP。
 
-中间件本身是一个Python的类，更换IP是在访问每个网页之前。所以，会用到 process_request 方法，这个方法中的代码会在每次爬虫访问网页之前执行。settings.py中，后面的数字表示优先级。数字越小，优先级越高，越先执行。例如，如果你有一个更换代理的中间件，还有一个更换Cookie的中间件，那么更换代理的中间件显然是需要在更换Cookie的中间件之前运行的。如果你把这个数字设为None，那么就表示禁用这个中间件。
+在之前的课程中，（1）和（2）我们都做过了。此番做中间件，就做一些没做过的，比如（3）。在爬虫开发中，更换代理IP是非常常见的情况，有时候甚至每一次访问都需要随机选择一个代理IP来进行。原因：通过同一个IP去并发数据量请求的时候，并发的数据量太大了，导致网站把我们这个IP列为有风险的IP。从而通过反爬虫的技术，将我们的IP封掉，或者封禁几分钟。这对爬虫进度会有影响。
 
 视频中讲解了：
 * 如何开启下载中间件，并且让下载中间件支持代理IP功能。这样，我们在下载之前就能做了一个处理，可以读取代理的IP。
 * 也要通过阅读分析源码，观察到底是从哪儿加载了代理IP。
 
+如何通过ip查看请求的ip地址：
+
+```python
+
+class HttpinSpider(scrapy.Spider):
+   name = 'httpbin'
+   allowed_domains = 'httpbin.org'
+   # 通过 ip 查看请求的 ip 地址：
+   start_urls = ['http://httpbin.org/ip']
+   # 通过 header 查看 user-agent：
+   start_urls = ['http://httpbin.org/headers']
+   
+   def parse(self, response):
+      print(response.text)
+
+>>> {
+   origin: "14.123.254.1"
+}
+```
+
+如何设置系统代理IP：
+
+Scrapy 默认支持系统代理自动去导入，主要三个步骤：
+* 在终端中支持新的代理
+* 改了 settings.py 中的配置，让 Scrapy 支持 http proxy 功能
+
+之后，再去 scrapy crawl [project_name] 的时候，就能在 origin 中有新的 IP 地址了。因为 http://52.179.231.206:00 对我们的 IP 地址做了一定的手脚，让 IP 地址不再是原来的那个。
+
+详细的解释如下：
+* 命令行导出一个系统的环境变量，针对当前 mac 和 linux 当前的状态下是生效的。若想要它们永久生效，需要写一些配置文件。生效了之后，当前终端在去请求 HTTP 协议的时候，会先流经 52.179.231.206 协议 和 00 端口，然后再访问出去。
+
+```python
+export http_proxy = 'http://52.179.231.206:00'
+```
+
+* 设置了之后，scrapy 不会直接去用，而是需要我们把代理下载中间件打开。如何打开：支持代理中间件的名字是 scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware, 我们要将其在 settings.py 中添加. 单凭现在来看，HttpProxyMiddleware 可能是一个类/方法。
+
+* 注意：TODO - 需要解决的问题：在12:17 ep07中，下载中间件有很多种，该如何确定优先级呢？
+
+具体功能是在哪里实现的呢：
+
+看 httpproxy.py 的源码，发现 class HttpProxyMiddleware 是通过 \_get_proxy() 来进行的查找（读取代理），通过 \_set_proxy() 来去做的设置（设置代理）。在后者中发现，最重要的是 request.meta['proxy'] = proxy, 后者这个 proxy 是通过上一行的 self.proxies[scheme] 得到的。逐步跟踪，发现是读取了系统的环境变量，逐渐再做加载，加载之后变成了这样的形式。
+
 ### 自定义中间件 & 随机代理IP
 
+上一个 section 中，我们没有自己写中间件。要想实现更复杂的代理，需要使用到自定义中间件，并且将配置写在 settings.py 中。
+
+如何编写一个下载中间件：不建议直接在类里写相应的功能，而是将类继承下来，然后再自行继续修改和编写。
+
+一般需要重写下面四个主要方法
+* process_request(request, spider) => request 对象经过下载中间件时会被调用，优先级高的先调用
+* process_response(request, response, spider) => response 对象经过下载中间件时会被调用，优先级高的后调用
+* process_exception(request, exception, spider) => 当 process_exception() 和 process_request() 抛出异常时会被调用
+* from_crawler(cls, crawler) => 使用 crawler 来创建中间器对象，并（必须）返回一个中间件对象
 
 ### Some helpful resources:
 * HttpProxyMiddleware: A middleware for scrapy. Used to change HTTP proxy from time to time. https://github.com/kohn/HttpProxyMiddleware
