@@ -152,6 +152,7 @@ Some helpful resources
 * Mysql| 命令行模式访问操作mysql数据库.: https://blog.csdn.net/u011479200/article/details/78511073
 * Python3 MySQL 数据库连接 - PyMySQL 驱动: https://www.runoob.com/python3/python3-mysql.html
 * scrapy爬虫系列：利用pymysql操作mysql数据库： https://newsn.net/say/scrapy-pymysql.html
+* Scrapy入门教程之写入数据库: https://www.jianshu.com/p/44366e9a2ed5 （学习 maoyan.py 中 if link: 的过滤步骤）
 
 
 ## Avoid being detected by the web server
@@ -190,10 +191,10 @@ print('Random broswer: '.format(ua.random))
 
 ### Cookie 模拟登录，解决反爬虫
 
-对于大部分网站而言，直接复制cookie没有问题。但是对于大规模爬虫来说，每次手动复制的话会稍显繁琐。因为cookie有有效期，几小时/24小时。若是爬虫7/24h运行，则还
+对于大部分网站而言，直接复制cookie没有问题。但是对于大规模爬虫来说，每次手动复制的话会稍显繁琐。因为 cookie 有有效期，几小时/24小时。若是爬虫7/24h运行，则还
 需要凌晨爬起来再改cookie。
 
-因此，需要模拟登录 =》 涉及到另一个http另外一个基础的概念。
+因此，需要模拟登录 =》 涉及到另一个 http 另外一个基础的概念。
 * get：在浏览器页面正常发起请求。直接将网页地址直接粘贴在浏览器的方式是get方式。
 * post：
 
@@ -212,7 +213,7 @@ r = requests.post('http://httpbin.org/post', data={'key': 'value'})
 r.json() # 若是post成功，请求完之后会有返回值，并且将其进行json化处理。
 ```
 
-Post和cookie之间的关系：产生cookie是需要用户名和密码登录的，但是一般用户名和密码都是需要保密的，所以希望不要在浏览器上明文显示密码。客户端也会通过加密的机制，返回进行加密的用户名和密码，也是客户端一部分的cookie保留了下来。
+Post 和 cookie 之间的关系：产生 cookie 是需要用户名和密码登录的，但是一般用户名和密码都是需要保密的，所以希望不要在浏览器上明文显示密码。客户端也会通过加密的机制，返回进行加密的用户名和密码，也是客户端一部分的 cookie 保留了下来。
 
 ```python
 import requests
@@ -577,20 +578,129 @@ export http_proxy = 'http://52.179.231.206:00'
 
 ### 自定义中间件 & 随机代理IP
 
-上一个 section 中，我们没有自己写中间件。要想实现更复杂的代理，需要使用到自定义中间件，并且将配置写在 settings.py 中。
+上一个 section 中，我们没有自己写中间件。要想实现更复杂的代理，需要使用到自定义中间件，并且将配置写在 settings.py 中。此外，系统代理 IP 需要与系统绑定，到了其他系统还要继续设置。
 
 如何编写一个下载中间件：不建议直接在类里写相应的功能，而是将类继承下来，然后再自行继续修改和编写。
 
 一般需要重写下面四个主要方法
 * process_request(request, spider) => request 对象经过下载中间件时会被调用，优先级高的先调用
-* process_response(request, response, spider) => response 对象经过下载中间件时会被调用，优先级高的后调用
+* process_response(request, response, spider) => 下载之后进行返回的 response 对象经过下载中间件时会被调用，优先级高的后调用
 * process_exception(request, exception, spider) => 当 process_exception() 和 process_request() 抛出异常时会被调用
-* from_crawler(cls, crawler) => 使用 crawler 来创建中间器对象，并（必须）返回一个中间件对象
+* from_crawler(cls, crawler) => 使用 crawler 来创建中间件对象，并（必须）返回一个中间件对象。该方法特别重要，因为我们在使用中间件比如需要初始化信息时，我们会将其丢入到该方法中
+
+编写随机 IP 下载中间件：
+
+* settings.py
+```python
+
+# 带两个 IP 的配置项
+# 注意：设置项的变量名全都需要大写，否则系统设置不会对其进行处理
+
+HTTP_PROXY_LIST = [
+   'http://52.179.231.206:80',
+   'http://95.0.194.241:9090'
+]
+
+# 那谁来读取这个list：proxyspider.middlewares.RandomHttpProxyMiddleware
+
+```
+
+该 RandomHttpProxyMiddleware 需要实现的两个功能：
+* 能够从配置文件中读取配置项
+* 能够设置到我们的代理上去
+
+因此，其实可以把 httpproxy.py 中的系统代理 IP 中间件需要的功能重写一下，不需要的可以保留 => 类的继承。
+
+```python 
+
+from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
+from scrapy.exceptions import NotConfigured
+from urllib.parse import urlparse
+
+class RandomHttpProxyMiddleware(HttpProxyMiddleware):
+   
+   def __init__ (self, auth_encoding='utf-8', proxy_list=None):
+   
+      # 因为原来继承的这个class直接读取系统的IP设置项，所以应该在此改写，传入 proxy_list
+      
+      self.proxies = defaultdict(list)
+      for proxy in proxy_list:
+         # 把 http 及其 后面的关键字进行拆分：方法（1）正则 （2）urlparse
+         parse = urlparse(proxy)
+         # print(parse): ParseResult(scheme='http', netloc='52.179.231.206:80', path='', params='', query='', fragment='')
+         # ParseResult(scheme='http', netloc='95.0.194.241:9090', path='', params='', query='', fragment='')
+         self.proxies[parse.scheme].append(proxy)
+      # print(self.proxies): defaultdict(<class> 'list'), {'http': ['http://52.179.231.206:80', 'http://95.0.194.241:9090']}
+      # 因为就是这个继承的类要写成这样的规范，相当于对方给我们提供了一个接口，要满足接口上的语法规范
+         
+   @classmethod
+   def from_crawler(cls, crawler):
+      # 类方法：不用去实例化，类就能访问到这个方法，可以直接让类被拿去用（所以第一个参数是cls）。而且类里面所有的属性和方法，from_crawler也可以直接拿去用
+      
+      # 判断有没有对应的配置文件
+      # 读取设置项，再传给 __init__
+      
+      # 先跑到爬虫的配置项去看是否有这个list
+      if not crawler.settings.get('HTTP_PROXY_LIST'):
+         raise NotConfigured # 是scrapy的自定义异常
+      
+      http_proxy_list = crawler.settings.get('HTTP_PROXY_LIST')
+      auth_encoding = crawler.settings.get('HTTPPROXY_AUTH_ENCODING', 'utf-8')
+      
+      return cls(auth_encoding, http_proxy_list)
+      # http_proxy_list 必须被返回。这个返回值就会被本类的 __init__ 实例化接收
+      
+   def _set_proxy(self, request, scheme):
+      # 设置代理，在正常发送请求之前会使用。
+      # 爬虫请求是 http，则 scheme 为 http；若爬虫请求是 https，则 scheme 为 https
+      proxy = random.choice(self.proxies[scheme])
+      request.meta['proxy'] = proxy
+
+```
+
+设置好之后，scrapy crawl [projectname] --nolog, 结果则为：
+
+```python
+>>> {
+   # 我们现在的IP： 代理1，代理2
+   'origin': '14.123.254.1', '95.0.194.3'
+}
+```
+
+若是再次进行新的请求，scrapy crawl [projectname] --nolog, IP则会不一样，随机根据list里有多少个。
+
 
 ### Some helpful resources:
 * HttpProxyMiddleware: A middleware for scrapy. Used to change HTTP proxy from time to time. https://github.com/kohn/HttpProxyMiddleware
+* Change IP address dynamically: https://stackoverflow.com/questions/28852057/change-ip-address-dynamically
 * Using a custom proxy in a Scrapy spider: https://support.scrapinghub.com/support/solutions/articles/22000219743-using-a-custom-proxy-in-a-scrapy-spider
 * 爬虫实战 Scrapy爬取猫眼电影: https://www.jianshu.com/p/cca6fe9b5650
+* scrapy中设置随机代理: https://blog.csdn.net/maverick17/article/details/79946480
+* 在scrapy中利用代理IP（爬取BOSS直聘网）: https://blog.csdn.net/MLXY123/article/details/84995175?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-3.compare&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-3.compare
+
+
+## 做作业时遇到的问题
+
+## Guidelines
+
+### 字符串的反斜线换行
+
+我自己如果写sql的话都这么写，为了好看：（1）反斜杠，（2）可以任意控制缩进
+不过最新语法支持不写斜线的格式了就没必要写三个引号的了，也不要写反斜杠，会报错。
+
+## python利用open打开文件的方式
+* w：以写方式打开， 
+* a：以追加模式打开 (从 EOF 开始, 必要时创建新文件) 
+* r+：以读写模式打开 
+* w+：以读写模式打开 (参见 w ) 
+* a+：以读写模式打开 (参见 a ) 
+* rb：以二进制读模式打开 
+* wb：以二进制写模式打开 (参见 w ) 
+* ab：以二进制追加模式打开 (参见 a ) 
+* rb+：以二进制读写模式打开 (参见 r+ ) 
+* wb+：以二进制读写模式打开 (参见 w+ ) 
+* ab+：以二进制读写模式打开 (参见 a+ )
+
 
 
 
