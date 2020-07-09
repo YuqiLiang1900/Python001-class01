@@ -437,13 +437,13 @@ Why Postman: a more convenient way to deal with API. For example:
 
 How to use Postman:
 
-![](pic/postman1.jpg)
+![](pic/postman1.png)
 
-![](pic/postman2.jpg)
+![](pic/postman2.png)
 
-![](pic/postman3.jpg)
+![](pic/postman3.png)
 
-![](pic/postman4.jpg)
+![](pic/postman4.png)
 
 ### Some helpful resources:
 * 爬取拉勾网Java开发工程师招聘信息: https://mackvord.github.io/webmagic/49928.html
