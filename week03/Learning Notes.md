@@ -1,6 +1,6 @@
 # Learning Notes for Week 03
 ## Objective for Week 03
-Further understanding of the web-scraping framework Scrapy
+Multiprocessing and multithreading
 
 ## Knowledge Tree
 * Multiprocessing
@@ -401,6 +401,208 @@ if __name__ == '__main__':
 * 正常工作进程被创建的时候，若是没有 join()，则表示主进程和子进程各自为政，主进程先完成之后，子进程继续执行，直到子进程执行完毕，整个程序才会关闭。
 * 在设置了 join() 之后，子进程是否被设置为守护进程已经对结果没有影响，统一的结果是：主进程会等待子进程结束之后，主进程才会结束
 
+##  Assignment 1
+
+作业一的具体流程
+
+1. 运行你写的 python 代码，以前是 python pmap.py，现在是 python pmap.py -f tcp -f ping -ip 180.101.49.11-180.101.49.14 -w result.json 这种形式，参数都是可选参数
+2. 进入程序首先获取 参数
+3. 把参数解析出来，看看传了哪些参数
+4. 根据传入的参数执行你的代码逻辑，比如写一个端口扫描函数，如果参数中有 -f tcp 就调用这个函数
+5. 执行完端口扫描要把结果收集起来，最后看看是否要写入文件
+
+sys 模块就是 python 调用底层的系统功能，ping 就是操作系统自带的功能，他有很多东西，你不用深入学，知道这个模块是干啥的就行。
+
+具体而言：
+
+1. 所谓端口扫描器，本质上跟爬虫差不多，爬虫往往是请求一个 url，获取 html 源码，端口扫描器就是请求一个 ip:port 看看这个 port 能不能连上，实际上爬虫的 url 默认端口是 80
+2. 关于 ping，见下图
+3. 关于快速检测一个指定 ip 地址开放了哪些 tcp 端口，实际上就是爬虫了，看看这个 ip:port 能不能连上，就这么个事，这里你要用 socket 来连接，我不建议你用现成的工具，具体 socket 不懂得问我，这回就得接触 socket 了
+4. 命令行参数，python 通过 sys 模块的 sys.argv 来获得命令行传入的参数，这是一个列表，比如你执行 python pmap.py -f tcp -f ping -ip 180.101.49.11-180.101.49.14 -w result.json ，程序中 sys.argv 结果为 ['pmap.py', '-f', 'tcp', '-f', 'ping', '-ip', '180.101.49.11-180.101.49.14', '-w', 'result.json']
+5. 关于 python 中如何执行 ping 命令，subprocess 模块的 subprocess.getstatusoutput() 方法可以用来执行 ping 命令，最终返回一个元组，元组第一个值为 0 代表 ping 通，否则不通
+
+![](pic/ping.png)
+
+terminal 中使用 ping 命令去 ping ip 地址的时候，会不停的发送请求，需要按住 ctrl + c 结束程序，python 中执行的时候不能这么干，让他 ping 一次看看通不通就行了，具体设置是有参数的，我先不讲了，你自己搜一下，最好设置两个参数，一个是请求一次，一个是超时时间，有超时时间程序才能尽快执行完成，不然对方不响应就卡住了。
+
+然后 socket 的话能不能连上对方，就是跟对方建立一个 tcp 的连接，能连上就表示 tcp 这个端口通了，比如用 socket 请求百度 www.baidu.com，如果能连上就是通了，但是 socket 接收的是 (ip, port)，具体写法看我的系列文章中的 hello world 程序，一定要设置超时时间，尽量短，可以设置0.1 秒这种，不然程序执行太慢了。
+
+Python 接收命令行参数的库也很多，比如 argparse、click 等，但不建议你现在用，用我说的最原始的 sys.argv 就够了，虽然写出来的程序健壮性不好，要写很多 if else 判断，但这是基础、原理部分。
+
+### 端口扫描器的概念
+
+端口扫描工具（Port Scanner）指用于**探测服务器或主机开放端口情况的工具**。常被（1）计算机管理员用于确认安全策略，同时被（2）攻击者用于识别目标主机上的可运作的网络服务。
+
+端口扫描定义是客户端向一定范围的服务器端口发送对应请求，以此确认可使用的端口。虽然其本身并不是恶意的网络活动，但也是网络攻击者探测目标主机服务，以利用该服务的已知漏洞的重要手段。**端口扫描的主要用途仍然只是确认远程机器某个服务的可用性**。
+
+扫描多个主机以获取特定的某个端口被称为端口清扫（Portsweep），以此获取特定的服务。例如，基于SQL服务的计算机蠕虫就会清扫大量主机的同一端口以在 1433 端口上建立TCP连接。
+
+### 实验原理
+
+最简单的端口扫描工具使用**TCP连接扫描**的方式，即利用**操作系统原生**的网络功能，且通常作为SYN扫描的替代选项。Nmap将这种模式称为连接扫描，因为使用了类似Unix系统的connect()命令。如果该端口是开放的，操作系统就能完成TCP三次握手，然后端口扫描工具会立即关闭刚建立的该连接，防止拒绝服务攻击。
+
+```python
+import sys  
+import thread  
+from socket import *  
+  
+def tcp_test(port):  
+	sock = socket(AF_INET,SOCK_STREAM)  
+	sock.settimeout(10)  
+	result = sock.connect_ex((target_ip,port))  
+	if result == 0:  
+		lock.acquire()  
+		print("open ports:",port)
+		lock.release()  
+  
+if __name__ == '__main__':  
+  
+	# port_scan.py <host> <start_port>-<end_port>  
+	host = sys.argv[1]  
+	portstrs = sys.argv[2].split('-')  
+	  
+	start_port = int(portstrs[0])  
+	end_port = int(portstrs[1])  
+	  
+	target_ip = gethostbyname(host)  
+	  
+	lock = thread.allocate_lock()  
+	  
+	for port in range(start_port,end_port+1):  
+		thread.start_new_thread(tcp_test,(port,))  
+
+```
+
+代码中，`socket.socket()` 方法用来创建一个 `socket` 对象。同时，我们给它传递了两个参数：`socket.AF_INET` 表示使用IPv4协议，`socket(AF_INET,SOCK_STREAM) ` 表示这是一个基于 TCP 的 socket 对象。这两个参数是默认参数，可以不传。
+
+### The modules which we might need
+
+1. sys for getting arguments input by the user.
+2. socket for making a successful connection to the host.
+
+## Building Simple Port Scanner with Sockets
+
+Reference: https://pythonprogramming.net/python-port-scanner-sockets/
+
+```python 
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server = 'pythonprogramming.net'
+
+def pscan(port):
+	try:
+		s.connect((server, port))
+		return True
+	except:
+		# the port is not open
+		return False
+	
+for x in range(1, 26):
+	# will test the port number from 1 to 25
+	if pscan(x):
+		print('Port No.', x, 'is open!!!!!!')
+	else:
+		print('Port No.', x, 'is closed.')
+
+```
+
+This is not very efficient, because the output is that the printing will come out one by one slowly. Therefore, we usually use multithreading to solve such a problem, to use threaded ports at the same time.
+
+At the same time, however, we will also encounter an issue: who is going to scan what, what if there is a contradication between each other's jobs? ==> Locks.
+
+### Simple example: scanning a particular port
+
+Reference: https://www.youtube.com/watch?v=d3D8PAZV51g
+
+```python
+import socket
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# set a host which we are going to use
+host = '104.193.88.77'
+port = 443
+
+def port_scanner(host, port):
+    if s.connect_ex((host, port)):
+        print('The port is closed.')
+    else:
+        print('The port is open.')
+
+port_scanner(host, port)
+
+# output: The port is open.
+```
+
+However, if we try port = other numbers, it is not neccessary that the output will appear that soon. For example:
+
+![](pic/slow_port_output.png)
+
+Therefore, it is necessary to set the timeout parameter.
+
+```python
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(5) # five seconds
+```
+
+After this, the speed of showing the output is much faster. 
+
+### Threaded port scanner
+
+Reference: https://pythonprogramming.net/python-threaded-port-scanner/?completed=/python-port-scanner-sockets/
+
+As I imagine you discovered, port scanning can be brutally slow, yet, in most cases, is not processing intensive. Thus, we can use threading to drastically improve our speed. There are thousands of possible ports. If it is taking 5-15 seconds per port to scan, then you might have a long wait ahead of you without the use of threading.
+
+Threading can be a complex topic, but it can be broken down and conceptualized as a methodology where we can tell the computer to do another task if the processor is experiencing idle time. In the case of port scanning, we're spending a lot of time just waiting on the response from the server. While we're waiting, why not do something else? That's what threading is for. If you want to learn more about threading, I have a threading tutorial here.
+
+### Understanding Socket
+
+![](pic/socket.png)
+
+目前的 Socket 编程，使用的最多的就是通过 TCP 协议进程网络通讯。TCP 进行通讯的程序双方，分为服务端和客户端。TCP 协议进行通讯的双方，是需要先建立一个虚拟连接的，然后双方程序才能发送业务数据信息。而建立 TCP 虚拟连接，是通过著名的三次握手进行的。
+
+具体三次握手的细节：https://zhuanlan.zhihu.com/p/40499563
+
+![](pic/tcp_three_handshake.jpg)
+
+1. 请求端（通常称为客户）发送一个 SYN 段指明客户打算连接的服务器的端口， 以及初 始序号（ISN，在这个例子中为1415531521）。这个SYN段为报文段1。
+2. 服务器发回包含服务器的初始序号的 SYN报文段（报文段2）作为应答。同时，将确认 序号设置为客户的ISN加1以对客户的SYN报文段进行确认。一个SYN将占用一个序号。
+3. 客户必须将确认序号设置为服务器的 ISN 加1以对服务器的 SYN 报文段进行确认（报文 段3）。 这三个报文段完成连接的建立。这个过程也称为三次握手（ three-way handshake）。
+
+Q: 为什么需要四次挥手，两次挥手为什么不行？
+
+A: 建立一个连接需要三次握手，而终止一个连接要经过四次握手。
+
+这由 TCP的半关闭（halfclose）造成的。既然一个TCP连接是全双工（即数据在两个方向上能同时传递），因此每个方向必须单独地进行关闭。这原则就是当一方完成它的数据发送任务后就能发送一个 FIN来终止这个方向连接。当一端收到一个 FIN，它必须通知应用层另一端几经终止了那个方向的数据传送。收到一个FIN只意味着在这一方向上没有数据流动。一个TCP连接在收到一个FIN后仍能 发送数据。因此需要两个方向都收到FIN。
+
+### sys.argv v.s. argparse
+
+第一次接触在程序外部传参数的情况，刚开始真的一脸懵逼。详情看下方这个链接，很多大佬有解释。
+
+Reference: https://www.zhihu.com/question/23711222/answer/26173004
+
+「argv」是「argument variable」参数变量的简写形式，一般在命令行调用的时候由系统传递给程序。
+
+这个变量其实是一个List列表，argv[0] 一般是被调用的脚本文件名或全路径，和操作系统有关，argv[1]和以后就是传入的数据了。
+
+然后我们再看调用脚本的命令行：python using_sys.py we are arguments
+* python就不用说了，「using_sys.py」脚本名，
+* 后面的用空格分割开的「we」「are」「argument」就是参数了。PS.一般参数由空格分隔，如果参数内部有空格要使用英文双引号引起来比如这样：python using_sys.py hi "I'm 7sDream"
+
+按照教程的命令行运行脚本的时候，按照argv的定义：argv = ["using_sys.py", "we", "are", "argument"]
+
+然后用for对argv这个List进行迭代输出，就得到了教程里的结果。「话说你真的跟着教程做了吗？we are argument因该是你亲手输入终端的啊 = =」
+
+
+### Some helpful resources
+* 用Python编写一个高效的端口扫描器: https://www.jianshu.com/p/b1994a370660
+* **各种版本的端口扫描器**：https://github.com/windard/Port_Scan
+* 用到 optparse 和 多线程的端口扫描器（有格式，写得挺好）：http://www.python88.cn/art/37994/
+* Python Socket网络编程: https://www.bilibili.com/video/BV1a7411z75u?from=search&seid=11177835815277809687
+* 用python实现一个端口扫描器：https://www.geek-share.com/detail/2726168657.html
+* TCP端口扫描[Python3.5]： https://blog.csdn.net/u014281392/article/details/79237756
+* Python | 使用Python3 实现端口扫描： https://cloud.tencent.com/developer/article/1512556
+* python编写类似nmap的扫描工具：https://www.cnblogs.com/darkpig/p/7638644.html
+
 ## Assignment 2
 
 ### Frontend Knowledge
@@ -409,7 +611,40 @@ if __name__ == '__main__':
 
 首先页面分析肯定是玩爬虫的前提条件，如何发现链接、如何抽取有效信息，这些都是需要事先解决的问题，只有找到页面的规律才能进行下一步的操作。以拉勾网为例，其页面的数据并不是由服务端渲染完成后再返回给前端的，而是通过返回json数据，由前端进行渲染展示。所以这就带来了一个问题，之前那种直接抓取页面链接，抽取信息的方法已经无法完成抓取任务了。接下来打开google浏览器的调试工具，我们访问Java相关的招聘页面，并限定工作地点为北京，首先先看Headers部分的信息，其中Response Headers(响应头)和Query String Parameters(查询的字符串参数)这两个部分的信息可不用理会，我们重点来看General、Request Headers和From Data这是三个部分，General包含了请求的URL地址以及请求的方式，划线的部分是转码后的中文北京，不同的城市这一部分是不同的。
 
-### Basic knowledge about links
+### Cookie
+Reference: Python搭建代理池爬取拉勾网招聘信息 https://juejin.im/post/5d5e92916fb9a06ac93cd5f5
+
+再回到控制台看看这个请求，发现是需要携带 cookie 的，ok，那我们加上 cookie。可是 cookie 是从哪里来的，总不能写死吧。
+我们先把浏览器的 cookie 清除以下(控制台-Application-Cookies 点击清除)，然后再刷新下页面，发现了 cookie 的来源:
+
+![](https://user-gold-cdn.xitu.io/2019/8/22/16cb96d42189dec6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
+那我们先获取 cookie, 再去请求接口： 
+
+
+```python
+import requests
+UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3704.400 QQBrowser/10.4.3587.400"
+
+def getCookie():
+    '''
+        @method 获取cookie
+    '''
+    global UserAgent
+    response = requests.get('https://www.lagou.com/jobs/list_Python?px=default&city=%E6%AD%A6%E6%B1%89', headers={
+        "User-Agent": UserAgent
+    })
+    # 获取的cookie是字典类型的
+    cookies = response.cookies.get_dict()
+    # 因为请求头中cookie需要字符串,将字典转化为字符串类型
+    COOKIE = ''
+    for key, val in cookies.items():
+        COOKIE += (key + '=' + val + '; ')
+    return COOKIE
+```
+
+
+### Basic knowledge about urls
 
 Q：以北京的python招聘页面为例，地址为 https://www.lagou.com/jobs/list_Python/p-city_2?px=default 但是我发现要是我把最后的这个 ?px=default  删掉其实也是能够正常访问的。我想用删掉 ?px=default 这个部分的链接，但是不知道这样的话是不是就会让服务器识别到咱们不是正常用户操作呢？
 
