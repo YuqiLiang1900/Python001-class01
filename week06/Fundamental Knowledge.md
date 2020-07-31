@@ -55,18 +55,12 @@ E.g. While running the py file as shown in the following picture, there would be
 
 That is because, the first printing line is after the accept(). 
 
-![get_stuck](pic/get_stuck.jpg)
-
-![](pic/print.jpg)
-
 `accept()` returns an open connection between the server and client, **along with the address of the client**. The connection is actually a different socket on another port (assigned by the kernel). Data is read from the connection with `recv()` and transmitted with `sendall()`.
 
 **There are two kinds of sockets which are created:**
 
 * **The main socket**, which never rests. It is responsible for being alive forever in case clients can connect to the web application whenever they want. Since it already occupies a port by binding with an IP address and port, there is no need for a small socket to do that.
 * **The small sockets**, which are assigned to every single client which is connecting to the server. Note that this is not the socket of client, because client and server are in different programs, it is not possible for the server to control the program of client. Therefore, the client `client, address = s.accept()` is the small socket which is assigned to connect with the client, while the address is the only information which the server can get about the client: the IP address and the port which the client is currently using. 
-
-![socket](pic/socket.jpg)
 
 For illustration:
 
@@ -245,8 +239,6 @@ Secondly, open the broswer, input the link: 127.0.0.1:8000
 
 ##### Curl
 
-![](pic/curl_info.jpg)
-
 ##### Ping
 
 #### Within a Code File: the Requests Module
@@ -257,15 +249,9 @@ Secondly, open the broswer, input the link: 127.0.0.1:8000
 
 Instead, we need to do this:
 
-![](pic/requests.jpg)
-
 Or we can write these lines in a py file, firstly run the server.py, and then run the my_requests.py.
 
-![](pic/way.jpg)
-
 果然 requests 库发请求默认支持这两种压缩格式：
-
-![](pic/requests_info.jpg)
 
 #### Postman
 
