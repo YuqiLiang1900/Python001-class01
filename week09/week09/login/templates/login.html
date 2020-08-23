@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form }}
+    {% if error_message %}
+        {{ error_message }}
+    {% endif %}
+    <input type="submit" value="Submit">
+</form>
+</body>
+</html>
