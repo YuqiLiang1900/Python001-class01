@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}
+    评论
+{% endblock %}
+{% load sentiment_extras %}
+{% block content %}
+    <form class="form-inline mb-4">
+        <input type="hidden" name="product" value="{{ product.id }}">
+        <input class="form-control mr-sm-2" name="q" type="search" placeholder="请输入搜索关键字" aria-label="Search">
+        <label for="start-date">评论开始时间：</label>
+        <input type="date" name="start" id="start-date">
+        <label for="end-date" class="ml-2">评论结束时间：</label>
+        <input type="date" name="end" id="end-date">
+        <button class="btn btn-outline-primary ml-2" type="submit">搜索</button>
+    </form>
+    {% include "aggregate_card.html" %}
+    <div class="mb-1 mt-4">
+        <b>产品：</b><span>{{ product.title }}</span>
+    </div>
+    <table class="table table-hover">
+        <thead>
+        <tr class="table-active">
+            <th scope="col" class="text-nowrap">序号</th>
+            <th scope="col">用户名</th>
+            <th scope="col">评论内容</th>
+            <th scope="col">情感倾向</th>
+            <th scope="col">评论时间</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for comment in page_obj %}
+            <tr>
+                <th scope="row">{{ forloop.counter|compute_no:page_obj.number }}</th>
+                <td>{{ comment.username }}</td>
+                <td>{{ comment.comment }}</td>
+                <td>{{ comment.sentiment|format_sentiment }}</td>
+                <td class="text-nowrap">{{ comment.comment_datetime }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div class="page d-flex justify-content-center">
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{% url 'sentiment:comment' %}?product={{ product.id }}&page={{ page_obj.previous_page_number }}">
+                            上一页
+                        </a>
+                    </li>
+                {% endif %}
+                {% for page in page_obj.paginator.page_range %}
+                    <li class="page-item
+                        {% if page == page_obj.number %}
+                            active
+                        {% endif %}">
+                        <a class="page-link"
+                           href="{% url 'sentiment:comment' %}?product={{ product.id }}&page={{ page }}">
+                            {{ page }}
+                        </a>
+                    </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{% url 'sentiment:comment' %}?product={{ product.id }}&page={{ page_obj.next_page_number }}">
+                            下一页
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+{% endblock content %}

@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}{% endblock title %} - 舆情分析平台</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block style %}{% endblock style %}
+    <script src="{% static 'js/jquery.slim.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.js' %}"></script>
+    <script src="{% static 'js/echarts.min.js' %}"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand" href="{% url 'sentiment:index' %}">舆情分析平台</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+            aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+                <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'sentiment:index' %}">首页</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.path == '/products' %}active{% endif %}" href="{% url 'sentiment:product' %}">产品</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.path == '/comments' %}active{% endif %}" href="{% url 'sentiment:comment' %}">评论</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+<div class="container mt-5">
+    {% block content %}{% endblock content %}
+</div>
+{% block script %}{% endblock script %}
+</body>
+</html>

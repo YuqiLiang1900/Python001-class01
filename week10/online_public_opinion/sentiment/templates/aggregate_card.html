@@ -1,0 +1,55 @@
+{% load static %}
+<div class="row d-flex justify-content-between">
+    <div class="card">
+        <div class="row">
+            <div class="col-md-6">
+                <img src="{% static 'img/comment.png' %}" class="card-img ml-2">
+            </div>
+            <div class="col-md-6">
+                <div class="card-body text-right">
+                    <h2 class="card-title">{{ comments_count }}</h2>
+                    <p class="card-text"><small class="text-muted">评论数量</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="row">
+            <div class="col-md-6">
+                <img src="{% static 'img/nlp.png' %}" class="card-img ml-2">
+            </div>
+            <div class="col-md-6">
+                <div class="card-body text-right">
+                    <h2 class="card-title">{{ sentiment_avg }}</h2>
+                    <p class="card-text"><small class="text-muted">情感倾向</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="row">
+            <div class="col-md-6">
+                <img src="{% static 'img/plus.png' %}" class="card-img ml-2">
+            </div>
+            <div class="col-md-6">
+                <div class="card-body text-right">
+                    <h2 class="card-title">{{ plus }}</h2>
+                    <p class="card-text"><small class="text-muted">正向数量</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="row">
+            <div class="col-md-6">
+                <img src="{% static 'img/minus.png' %}" class="card-img ml-2">
+            </div>
+            <div class="col-md-6">
+                <div class="card-body text-right">
+                    <h2 class="card-title">{{ minus }}</h2>
+                    <p class="card-text"><small class="text-muted">负向数量</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

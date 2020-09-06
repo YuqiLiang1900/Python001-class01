@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}
+    首页
+{% endblock %}
+
+{% block content %}
+    {% include "aggregate_card.html" %}
+    <div id="chart"></div>
+{% endblock content %}
+
+{% block script %}
+    <script>
+        let plus = '{{ plus }}';
+        let minus = '{{ minus }}';
+
+        // 基于准备好的dom，初始化echarts实例
+        let myChart = echarts.init(document.getElementById('chart'));
+
+        option = {
+            title: {
+                text: '什么值得买-手机产品 24 小时排行评论舆情',
+                subtext: '评论情感分析结果',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b} : {c} ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                left: 'left',
+                data: ['正向评价', '负向评价']
+            },
+            series: [
+                {
+                    name: '情感倾向',
+                    type: 'pie',
+                    radius: '55%',
+                    center: ['50%', '60%'],
+                    data: [
+                        {value: plus, name: '正向评价'},
+                        {value: minus, name: '负向评价'},
+                    ],
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+            ]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+    </script>
+{% endblock %}
